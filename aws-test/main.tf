@@ -316,8 +316,6 @@ provider "kubernetes" {
 }
 
 resource "kubernetes_service_account_v1" "aws_load_balancer_controller" {
-  automount_service_account_token = false
-
   metadata {
     name      = "aws-load-balancer-controller"
     namespace = "kube-system"
@@ -327,3 +325,31 @@ resource "kubernetes_service_account_v1" "aws_load_balancer_controller" {
     }
   }
 }
+
+resource "aws_ssm_parameter" "master_app_message" {
+  name = "/nginx-test/master/app-message"
+  type = "String"
+  insecure_value = "master-app-message"
+}
+
+resource "aws_ssm_parameter" "production_app_message" {
+  name = "/nginx-test/production/app-message"
+  type = "String"
+  insecure_value = "production-app-message"
+}
+
+data "aws_iam_policy_document" "nginx_ssm_access" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ssm:GetParameters"
+    ]
+
+    resources = [
+      aws_ssm_parameter.master_app_message.arn,
+      aws_ssm_parameter.production_app_message.arn
+    ]
+  }
+}
+
